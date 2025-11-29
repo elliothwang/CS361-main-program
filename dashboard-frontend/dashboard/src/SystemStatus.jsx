@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react"
 
 /*
-  system status page with simple health snapshot and retry
-  optional back navigation supported via onBack prop
+  system status page with focused health snapshot
+  shows last check connection status and recovery controls
 */
 export default function SystemStatus({ onBack }) {
   const [statusInfo, setStatusInfo] = useState({
     connected: true,
-    message: "Loading status...",
+    message: "loading status...",
     serial_number: "",
     last_check: "",
   })
+  const [isChecking, setIsChecking] = useState(false)
 
   async function fetchStatus() {
     try {
+      setIsChecking(true)
       const res = await fetch("/api/status")
+      if (!res.ok) throw new Error()
       const body = await res.json()
       setStatusInfo({
         connected: body.connected,
@@ -23,12 +26,14 @@ export default function SystemStatus({ onBack }) {
         last_check: body.last_check,
       })
     } catch {
-      setStatusInfo({
+      setStatusInfo(prev => ({
+        ...prev,
         connected: false,
-        message: "Rolling statistics service not responding.",
-        serial_number: "S/N: 1234567890",
+        message: "unable to reach microservice",
         last_check: new Date().toLocaleTimeString(),
-      })
+      }))
+    } finally {
+      setIsChecking(false)
     }
   }
 
@@ -36,77 +41,149 @@ export default function SystemStatus({ onBack }) {
     fetchStatus()
   }, [])
 
-  return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#111", backgroundColor: "#fff", padding: "1rem", maxWidth: "700px", margin: "0 auto" }}>
-      <header style={{ marginBottom: "1rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.2rem", lineHeight: 1.3, fontWeight: "600", color: statusInfo.connected ? "#000" : "#cc0000" }}>
-          system status
-        </h1>
-        <div style={{ fontSize: "0.9rem", color: "#222", marginTop: "0.25rem", lineHeight: 1.45 }}>
-          indicates whether the dashboard can reach the statistics microservice includes retry and navigation controls
-        </div>
-      </header>
+  function renderConnectionCard() {
+    const badgeColor = statusInfo.connected ? "#16a34a" : "#b91c1c"
+    const badgeBg = statusInfo.connected ? "#dcfce7" : "#fee2e2"
+    const label = statusInfo.connected ? "connected" : "disconnected"
 
+    return (
       <section
         style={{
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-          padding: "1rem",
-          backgroundColor: statusInfo.connected ? "#fafafa" : "#fff5f5",
-          marginBottom: "1rem",
+          border: "1px solid #e2e8f0",
+          borderRadius: 4,
+          padding: "0.75rem",
+          backgroundColor: "#ffffff",
+          marginBottom: "0.75rem",
+          fontSize: "0.9rem",
         }}
       >
-        <div style={{ fontWeight: "bold", marginBottom: "0.5rem", color: statusInfo.connected ? "#111" : "#cc0000" }}>
-          {statusInfo.connected ? "🟢 Connected" : "🔴 Disconnected / Service Unavailable"}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+          <div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.25rem" }}>connection</div>
+            <div style={{ fontSize: "1rem", fontWeight: 600 }}>{statusInfo.message}</div>
+          </div>
+          <span
+            style={{
+              display: "inline-block",
+              padding: "0.15rem 0.5rem",
+              borderRadius: 9999,
+              backgroundColor: badgeBg,
+              color: badgeColor,
+              fontSize: "0.75rem",
+              border: `1px solid ${badgeColor}`,
+            }}
+          >
+            {label}
+          </span>
         </div>
 
-        <div style={{ fontSize: "0.9rem", lineHeight: 1.5, color: statusInfo.connected ? "#111" : "#cc0000" }}>
-          {statusInfo.message}
+        <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#64748b" }}>
+          last check {statusInfo.last_check || "pending"}
         </div>
+      </section>
+    )
+  }
 
-        <div style={{ fontSize: "0.85rem", lineHeight: 1.4, marginTop: "0.75rem", color: "#222" }}>
-          <div>{statusInfo.serial_number}</div>
-          <div>Last check {statusInfo.last_check}</div>
+  function renderMetaCard() {
+    return (
+      <section
+        style={{
+          border: "1px solid #e2e8f0",
+          borderRadius: 4,
+          padding: "0.75rem",
+          backgroundColor: "#f9fafb",
+          marginBottom: "0.75rem",
+          fontSize: "0.85rem",
+        }}
+      >
+        <div style={{ marginBottom: "0.25rem" }}>
+          <strong>device serial </strong>
+          {statusInfo.serial_number || "not reported"}
         </div>
+        <p style={{ marginTop: "0.25rem", marginBottom: 0, maxWidth: "60ch", color: "#64748b" }}>
+          this page is useful during debugging sessions and in your video to show that the dashboard is reaching
+          the stats microservice as a separate process instead of a direct function call
+        </p>
+      </section>
+    )
+  }
 
-        <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-          <button style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem" }} onClick={fetchStatus}>
-            retry connection
-          </button>
+  function renderControls() {
+    return (
+      <section
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.5rem",
+          marginTop: "0.25rem",
+        }}
+      >
+        <button
+          onClick={fetchStatus}
+          disabled={isChecking}
+          style={{
+            padding: "0.3rem 0.8rem",
+            borderRadius: 4,
+            border: "1px solid #2563eb",
+            backgroundColor: isChecking ? "#eff6ff" : "#2563eb",
+            color: isChecking ? "#2563eb" : "#ffffff",
+            fontSize: "0.85rem",
+            cursor: isChecking ? "default" : "pointer",
+          }}
+        >
+          {isChecking ? "checking…" : "retry check"}
+        </button>
 
+        {onBack && (
           <button
-            style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem" }}
-            onClick={() => (onBack ? onBack() : null)}
-            title="return to main dashboard"
+            onClick={onBack}
+            style={{
+              padding: "0.3rem 0.8rem",
+              borderRadius: 4,
+              border: "1px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#0f172a",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+            }}
           >
             back to dashboard
           </button>
-        </div>
+        )}
       </section>
+    )
+  }
 
-      <footer
-        style={{
-          marginTop: "1rem",
-          borderTop: "1px solid #ccc",
-          backgroundColor: statusInfo.connected ? "#eaffea" : "#ffecec",
-          borderRadius: "4px",
-          padding: "0.5rem",
-          fontSize: "0.8rem",
-          lineHeight: 1.4,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "0.75rem",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <strong>Status </strong>
-          {statusInfo.connected ? "🟢 Connected" : "🔴 Disconnected"}
+  return (
+    <div
+      style={{
+        fontFamily: "system-ui, sans-serif",
+        color: "#0f172a",
+        padding: "0.5rem 0 1.5rem 0",
+        width: "100%",
+      }}
+    >
+      <header style={{ marginBottom: "1rem" }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "1.2rem",
+            lineHeight: 1.3,
+            fontWeight: 600,
+            color: statusInfo.connected ? "#0f172a" : "#b91c1c",
+          }}
+        >
+          system status
+        </h1>
+        <div style={{ fontSize: "0.9rem", color: "#222", marginTop: "0.25rem", lineHeight: 1.45 }}>
+          shows whether the dashboard can reach the statistics microservice
+          includes retry and navigation controls for recovering from transient failures
         </div>
-        <div>{statusInfo.message}</div>
-        <div>{statusInfo.serial_number}</div>
-        <div>Last check {statusInfo.last_check}</div>
-      </footer>
+      </header>
+
+      {renderConnectionCard()}
+      {renderMetaCard()}
+      {renderControls()}
     </div>
   )
 }
