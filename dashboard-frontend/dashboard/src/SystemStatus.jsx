@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 
 /*
   system status view with health snapshot for core microservices
-  surfaces connection, environment mode, and auth service health
+  surfaces connection, environment mode, and individual ms health
 */
 export default function SystemStatus({ onBack }) {
   const [statusInfo, setStatusInfo] = useState({
@@ -26,6 +26,27 @@ export default function SystemStatus({ onBack }) {
     last_check: "",
   })
   const [isAuthChecking, setIsAuthChecking] = useState(false)
+
+  const [featureInfo, setFeatureInfo] = useState({
+    connected: true,
+    message: "Loading feature flag health.",
+    last_check: "",
+  })
+  const [isFeatureChecking, setIsFeatureChecking] = useState(false)
+
+  const [plotInfo, setPlotInfo] = useState({
+    connected: true,
+    message: "Loading plot service health.",
+    last_check: "",
+  })
+  const [isPlotChecking, setIsPlotChecking] = useState(false)
+
+  const [reportInfo, setReportInfo] = useState({
+    connected: true,
+    message: "Loading report compiler health.",
+    last_check: "",
+  })
+  const [isReportChecking, setIsReportChecking] = useState(false)
 
   async function fetchStatus() {
     try {
@@ -128,10 +149,85 @@ export default function SystemStatus({ onBack }) {
     }
   }
 
+  async function fetchFeatureHealth() {
+    try {
+      setIsFeatureChecking(true)
+      const res = await fetch("/api/feature-flags/health")
+      if (!res.ok) throw new Error()
+      const body = await res.json()
+      setFeatureInfo({
+        connected: body.connected ?? true,
+        message:
+          body.message || "Feature flag service is responding normally.",
+        last_check: new Date().toLocaleTimeString(),
+      })
+    } catch {
+      setFeatureInfo(prev => ({
+        ...prev,
+        connected: false,
+        message: "Unable to reach feature flag microservice.",
+        last_check: new Date().toLocaleTimeString(),
+      }))
+    } finally {
+      setIsFeatureChecking(false)
+    }
+  }
+
+  async function fetchPlotHealth() {
+    try {
+      setIsPlotChecking(true)
+      const res = await fetch("/api/plots/health")
+      if (!res.ok) throw new Error()
+      const body = await res.json()
+      setPlotInfo({
+        connected: body.connected ?? true,
+        message:
+          body.message || "Data plot visualizer microservice is healthy.",
+        last_check: new Date().toLocaleTimeString(),
+      })
+    } catch {
+      setPlotInfo(prev => ({
+        ...prev,
+        connected: false,
+        message: "Unable to reach data plot visualizer microservice.",
+        last_check: new Date().toLocaleTimeString(),
+      }))
+    } finally {
+      setIsPlotChecking(false)
+    }
+  }
+
+  async function fetchReportHealth() {
+    try {
+      setIsReportChecking(true)
+      const res = await fetch("/api/report/health")
+      if (!res.ok) throw new Error()
+      const body = await res.json()
+      setReportInfo({
+        connected: body.connected ?? true,
+        message:
+          body.message || "Report compiler microservice is healthy.",
+        last_check: new Date().toLocaleTimeString(),
+      })
+    } catch {
+      setReportInfo(prev => ({
+        ...prev,
+        connected: false,
+        message: "Unable to reach report compiler microservice.",
+        last_check: new Date().toLocaleTimeString(),
+      }))
+    } finally {
+      setIsReportChecking(false)
+    }
+  }
+
   useEffect(() => {
     fetchStatus()
     fetchMode()
     fetchAuthHealth()
+    fetchFeatureHealth()
+    fetchPlotHealth()
+    fetchReportHealth()
   }, [])
 
   function renderConnectionCard() {
@@ -423,6 +519,279 @@ export default function SystemStatus({ onBack }) {
     )
   }
 
+  function renderFeatureCard() {
+    const badgeColor = featureInfo.connected ? "#16a34a" : "#b91c1c"
+    const badgeBg = featureInfo.connected ? "#dcfce7" : "#fee2e2"
+    const label = featureInfo.connected ? "Online" : "Offline"
+
+    return (
+      <section
+        style={{
+          border: "1px solid #e2e8f0",
+          borderRadius: 4,
+          padding: "0.75rem",
+          backgroundColor: "#ffffff",
+          marginBottom: "0.75rem",
+          fontSize: "0.9rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "0.8rem",
+                color: "#64748b",
+                marginBottom: "0.25rem",
+              }}
+            >
+              Feature Flag Microservice
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: 600 }}>
+              {featureInfo.message}
+            </div>
+          </div>
+          <span
+            style={{
+              display: "inline-block",
+              padding: "0.15rem 0.6rem",
+              borderRadius: 9999,
+              backgroundColor: badgeBg,
+              color: badgeColor,
+              fontSize: "0.75rem",
+              border: `1px solid ${badgeColor}`,
+            }}
+          >
+            {label}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            fontSize: "0.8rem",
+            color: "#64748b",
+          }}
+        >
+          Last check {featureInfo.last_check || "pending"}.
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            display: "flex",
+            gap: "0.5rem",
+          }}
+        >
+          <button
+            onClick={fetchFeatureHealth}
+            disabled={isFeatureChecking}
+            style={{
+              padding: "0.3rem 0.8rem",
+              borderRadius: 4,
+              border: "1px solid #2563eb",
+              backgroundColor: isFeatureChecking ? "#eff6ff" : "#2563eb",
+              color: isFeatureChecking ? "#2563eb" : "#ffffff",
+              fontSize: "0.8rem",
+              cursor: isFeatureChecking ? "default" : "pointer",
+              fontWeight: 500,
+            }}
+          >
+            {isFeatureChecking ? "Checking…" : "Refresh Feature Flag Health"}
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  function renderPlotCard() {
+    const badgeColor = plotInfo.connected ? "#16a34a" : "#b91c1c"
+    const badgeBg = plotInfo.connected ? "#dcfce7" : "#fee2e2"
+    const label = plotInfo.connected ? "Online" : "Offline"
+
+    return (
+      <section
+        style={{
+          border: "1px solid #e2e8f0",
+          borderRadius: 4,
+          padding: "0.75rem",
+          backgroundColor: "#ffffff",
+          marginBottom: "0.75rem",
+          fontSize: "0.9rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "0.8rem",
+                color: "#64748b",
+                marginBottom: "0.25rem",
+              }}
+            >
+              Data Plot Visualizer Microservice
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: 600 }}>
+              {plotInfo.message}
+            </div>
+          </div>
+          <span
+            style={{
+              display: "inline-block",
+              padding: "0.15rem 0.6rem",
+              borderRadius: 9999,
+              backgroundColor: badgeBg,
+              color: badgeColor,
+              fontSize: "0.75rem",
+              border: `1px solid ${badgeColor}`,
+            }}
+          >
+            {label}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            fontSize: "0.8rem",
+            color: "#64748b",
+          }}
+        >
+          Last check {plotInfo.last_check || "pending"}.
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            display: "flex",
+            gap: "0.5rem",
+          }}
+        >
+          <button
+            onClick={fetchPlotHealth}
+            disabled={isPlotChecking}
+            style={{
+              padding: "0.3rem 0.8rem",
+              borderRadius: 4,
+              border: "1px solid #2563eb",
+              backgroundColor: isPlotChecking ? "#eff6ff" : "#2563eb",
+              color: isPlotChecking ? "#2563eb" : "#ffffff",
+              fontSize: "0.8rem",
+              cursor: isPlotChecking ? "default" : "pointer",
+              fontWeight: 500,
+            }}
+          >
+            {isPlotChecking ? "Checking…" : "Refresh Plot Service Health"}
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  function renderReportCard() {
+    const badgeColor = reportInfo.connected ? "#16a34a" : "#b91c1c"
+    const badgeBg = reportInfo.connected ? "#dcfce7" : "#fee2e2"
+    const label = reportInfo.connected ? "Online" : "Offline"
+
+    return (
+      <section
+        style={{
+          border: "1px solid #e2e8f0",
+          borderRadius: 4,
+          padding: "0.75rem",
+          backgroundColor: "#ffffff",
+          marginBottom: "0.75rem",
+          fontSize: "0.9rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "0.8rem",
+                color: "#64748b",
+                marginBottom: "0.25rem",
+              }}
+            >
+              Report Compiler Microservice
+            </div>
+            <div style={{ fontSize: "1rem", fontWeight: 600 }}>
+              {reportInfo.message}
+            </div>
+          </div>
+          <span
+            style={{
+              display: "inline-block",
+              padding: "0.15rem 0.6rem",
+              borderRadius: 9999,
+              backgroundColor: badgeBg,
+              color: badgeColor,
+              fontSize: "0.75rem",
+              border: `1px solid ${badgeColor}`,
+            }}
+          >
+            {label}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            fontSize: "0.8rem",
+            color: "#64748b",
+          }}
+        >
+          Last check {reportInfo.last_check || "pending"}.
+        </div>
+
+        <div
+          style={{
+            marginTop: "0.5rem",
+            display: "flex",
+            gap: "0.5rem",
+          }}
+        >
+          <button
+            onClick={fetchReportHealth}
+            disabled={isReportChecking}
+            style={{
+              padding: "0.3rem 0.8rem",
+              borderRadius: 4,
+              border: "1px solid #2563eb",
+              backgroundColor: isReportChecking ? "#eff6ff" : "#2563eb",
+              color: isReportChecking ? "#2563eb" : "#ffffff",
+              fontSize: "0.8rem",
+              cursor: isReportChecking ? "default" : "pointer",
+              fontWeight: 500,
+            }}
+          >
+            {isReportChecking ? "Checking…" : "Refresh Report Health"}
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   function renderMetaCard() {
     return (
       <section
@@ -531,15 +900,17 @@ export default function SystemStatus({ onBack }) {
             lineHeight: 1.45,
           }}
         >
-          Review the health of the statistics, feature flag, and authentication
-          microservices before running test sessions or recording the demo
-          video.
+          Review the health of the statistics, feature flag, authentication,
+          data plot visualizer.
         </div>
       </header>
 
       {renderConnectionCard()}
       {renderModeCard()}
       {renderAuthCard()}
+      {renderFeatureCard()}
+      {renderPlotCard()}
+      {renderReportCard()}
       {renderMetaCard()}
       {renderControls()}
     </div>

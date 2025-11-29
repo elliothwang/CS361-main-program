@@ -274,6 +274,55 @@ def api_auth_health():
         return jsonify({"status": "error", "message": f"Auth MS unavailable: {exc}"}), 503
 
 
+@app.route("/api/feature-flags/health", methods=["GET"])
+def api_feature_flags_health():
+  try:
+    # use /mode as a simple health check for feature flag service
+    resp = requests.get(f"{FEATURE_FLAG_URL}/mode", timeout=2)
+    resp.raise_for_status()
+    return jsonify({
+      "connected": True,
+      "message": "Feature flag microservice is responding.",
+    }), 200
+  except Exception:
+    return jsonify({
+      "connected": False,
+      "message": "Feature flag microservice is not responding.",
+    }), 503
+
+
+@app.route("/api/plots/health", methods=["GET"])
+def api_plots_health():
+  try:
+    resp = requests.get(f"{PLOT_URL}/health", timeout=2)
+    resp.raise_for_status()
+    return jsonify({
+      "connected": True,
+      "message": "Data plot visualizer microservice is responding.",
+    }), 200
+  except Exception:
+    return jsonify({
+      "connected": False,
+      "message": "Data plot visualizer microservice is not responding.",
+    }), 503
+
+
+@app.route("/api/report/health", methods=["GET"])
+def api_report_health():
+  try:
+    resp = requests.get(f"{REPORT_URL}/health", timeout=2)
+    resp.raise_for_status()
+    return jsonify({
+      "connected": True,
+      "message": "Report compiler microservice is responding.",
+    }), 200
+  except Exception:
+    return jsonify({
+      "connected": False,
+      "message": "Report compiler microservice is not responding.",
+    }), 503
+
+
 @app.route("/api/auth/login", methods=["POST"])
 def api_auth_login():
     body = request.get_json(silent=True) or {}
