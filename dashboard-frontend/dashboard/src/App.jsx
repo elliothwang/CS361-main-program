@@ -2,14 +2,22 @@ import { useState } from "react"
 import Dashboard from "./Dashboard"
 import Statistics from "./Statistics"
 import SystemStatus from "./SystemStatus"
+import Login from "./Login"
 import "./App.css"
 
 function App() {
   const [view, setView] = useState("dashboard")
 
   function renderView() {
-    if (view === "statistics") return <Statistics />
-    if (view === "status") return <SystemStatus onBack={() => setView("dashboard")} />
+    if (view === "statistics")
+      return <Statistics />
+
+    if (view === "status")
+      return <SystemStatus onBack={() => setView("dashboard")} />
+
+    if (view === "auth")
+      return <Login />
+
     return <Dashboard />
   }
 
@@ -61,7 +69,8 @@ function App() {
                 color: "#64748b",
               }}
             >
-              Monitor live sensor streams, rolling statistics, and service health from connected microservices.
+              Monitor live sensor streams, rolling statistics, and service
+              health from connected microservices.
             </p>
           </div>
         </header>
@@ -79,6 +88,7 @@ function App() {
             { id: "dashboard", label: "Live Dashboard" },
             { id: "statistics", label: "Statistics" },
             { id: "status", label: "System Status" },
+            { id: "auth", label: "User Auth" },   // NEW TAB
           ].map(tab => {
             const isActive = view === tab.id
             return (

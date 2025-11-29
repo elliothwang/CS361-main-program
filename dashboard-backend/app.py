@@ -274,6 +274,114 @@ def api_auth_health():
         return jsonify({"status": "error", "message": f"Auth MS unavailable: {exc}"}), 503
 
 
+@app.route("/api/auth/register", methods=["POST"])
+def api_auth_register():
+    """
+    proxy user registration to the auth microservice
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        resp = requests.post(
+            f"{AUTH_URL}/auth/register",
+            json=payload,
+            timeout=4,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as exc:
+        return (
+            jsonify(
+                {
+                    "error": "auth microservice unavailable during registration",
+                    "details": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def api_auth_login():
+    """
+    proxy user login to the auth microservice
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        resp = requests.post(
+            f"{AUTH_URL}/auth/login",
+            json=payload,
+            timeout=4,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as exc:
+        return (
+            jsonify(
+                {
+                    "error": "auth microservice unavailable during login",
+                    "details": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def api_auth_logout():
+    """
+    proxy logout to the auth microservice, forwarding the bearer token
+    """
+    try:
+        auth_header = request.headers.get("Authorization", "")
+        headers = {}
+        if auth_header:
+            headers["Authorization"] = auth_header
+
+        resp = requests.post(
+            f"{AUTH_URL}/auth/logout",
+            headers=headers,
+            timeout=4,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as exc:
+        return (
+            jsonify(
+                {
+                    "error": "auth microservice unavailable during logout",
+                    "details": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.route("/api/auth/verify", methods=["GET"])
+def api_auth_verify():
+    """
+    proxy token verification to the auth microservice
+    """
+    try:
+        auth_header = request.headers.get("Authorization", "")
+        headers = {}
+        if auth_header:
+            headers["Authorization"] = auth_header
+
+        resp = requests.get(
+            f"{AUTH_URL}/auth/verify",
+            headers=headers,
+            timeout=4,
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as exc:
+        return (
+            jsonify(
+                {
+                    "error": "auth microservice unavailable during verify",
+                    "details": str(exc),
+                }
+            ),
+            503,
+        )
+
+
 @app.route("/api/feature-flags/health", methods=["GET"])
 def api_feature_flags_health():
   try:
