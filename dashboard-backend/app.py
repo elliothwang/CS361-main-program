@@ -212,22 +212,56 @@ def api_download_plot(plot_id):
 
 
 # --------------------------- Report Compiler ---------------------------
-@app.route("/api/report", methods=["GET"])
+@app.route("/api/report", methods=["POST"])
 def api_generate_report():
+    """
+    proxy endpoint for compiling a report via the report compiler microservice
+
+    - in test mode: skip remote call and return 'skipped' status
+    - in production mode: forward stats and plot metadata to the report compiler ms
+    """
     mode = get_environment_mode()
+    body = request.get_json(silent=True) or {}
 
     if mode == "test":
-        return jsonify({
-            "status": "skipped",
-            "mode": mode,
-            "message": "Report generation disabled in Test Mode."
-        }), 200
+        return jsonify(
+            {
+                "status": "skipped",
+                "mode": mode,
+                "message": "Report generation disabled in Test Mode.",
+            }
+        ), 200
 
     try:
-        resp = requests.get(f"{REPORT_URL}/report", timeout=5)
-        return jsonify(resp.json()), resp.status_code
+        resp = requests.post(
+            f"{REPORT_URL}/report",
+            json=body,
+            timeout=4,
+        )
+        try:
+            resp_body = resp.json()
+        except ValueError as exc:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Report Compiler MS returned non-JSON response: {exc}",
+                    }
+                ),
+                502,
+            )
+
+        return jsonify(resp_body), resp.status_code
     except Exception as exc:
-        return jsonify({"status": "error", "message": f"Report Compiler MS unavailable: {exc}"}), 503
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Report Compiler MS unavailable: {exc}",
+                }
+            ),
+            503,
+        )
 
 
 # --------------------------- User Auth ---------------------------
