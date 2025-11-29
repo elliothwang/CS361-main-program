@@ -1,128 +1,112 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Dashboard from "./Dashboard"
 import Statistics from "./Statistics"
 import SystemStatus from "./SystemStatus"
+import "./App.css"
 
-/*
-  root app shell with lightweight view routing
-  avoids external router to keep setup simple and reliable
-  includes keyboard shortcuts 1 2 3 for quick navigation
-*/
-export default function App() {
-  // current view state
+function App() {
   const [view, setView] = useState("dashboard")
 
-  // keyboard shortcuts for rapid nav
-  useEffect(() => {
-    function onKeyDown(e) {
-      if (e.key === "1") setView("dashboard")
-      if (e.key === "2") setView("statistics")
-      if (e.key === "3") setView("status")
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [])
-
-  // simple nav button component
-  function NavButton({ active, onClick, children }) {
-    return (
-      <button
-        onClick={onClick}
-        style={{
-          padding: "0.45rem 0.75rem",
-          fontSize: "0.9rem",
-          borderRadius: 6,
-          border: active ? "2px solid #3346ff" : "1px solid #bbb",
-          backgroundColor: active ? "#eef2ff" : "#fff",
-          color: active ? "#1b2cff" : "#111",
-          cursor: "pointer",
-        }}
-      >
-        {children}
-      </button>
-    )
-  }
-
-  // render current page
   function renderView() {
-    if (view === "dashboard") return <Dashboard />
     if (view === "statistics") return <Statistics />
     if (view === "status") return <SystemStatus onBack={() => setView("dashboard")} />
-    return null
+    return <Dashboard />
   }
 
-  // layout with sticky header for quick access
   return (
-    <div style={{ minHeight: "100vh", background: "#ffffff", color: "#111", fontFamily: "system-ui, sans-serif" }}>
-      {/* app header with navigation and hints */}
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#0b1120", // dark slate background
+      }}
+    >
       <div
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
+          maxWidth: 1200,
+          margin: "0 auto",               // centers the whole dashboard
+          padding: "1.5rem 1rem 2rem 1rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+          color: "#0f172a",
+          backgroundColor: "#f8fafc",     // light background for the app itself
+          borderRadius: 8,
+          boxShadow: "0 20px 40px rgba(15,23,42,0.35)",
         }}
       >
-        <div
+        {/* top header */}
+        <header
           style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "0.75rem 1rem",
             display: "flex",
-            alignItems: "center",
             justifyContent: "space-between",
+            alignItems: "center",
             gap: "1rem",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ fontWeight: 700, letterSpacing: "0.2px" }}>test dashboard</div>
-            <span
+          <div>
+            <h1
               style={{
-                fontSize: "0.75rem",
-                padding: "0.15rem 0.5rem",
-                borderRadius: 999,
-                background: "#eef4ff",
-                border: "1px solid #cbd5ff",
+                margin: 0,
+                fontSize: "1.5rem",
+                lineHeight: 1.2,
+                fontWeight: 600,
               }}
-              title="use keys 1 2 3 to switch views"
             >
-              keys 1 2 3 switch views
-            </span>
+              Test Operations Dashboard
+            </h1>
+            <p
+              style={{
+                margin: "0.25rem 0 0 0",
+                fontSize: "0.9rem",
+                color: "#64748b",
+              }}
+            >
+              Monitor live sensor streams, rolling statistics, and service health from connected microservices.
+            </p>
           </div>
+        </header>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <NavButton active={view === "dashboard"} onClick={() => setView("dashboard")}>
-              dashboard
-            </NavButton>
-            <NavButton active={view === "statistics"} onClick={() => setView("statistics")}>
-              statistics
-            </NavButton>
-            <NavButton active={view === "status"} onClick={() => setView("status")}>
-              system status
-            </NavButton>
-          </div>
-        </div>
-      </div>
+        {/* nav bar */}
+        <nav
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            borderBottom: "1px solid #e2e8f0",
+            paddingBottom: "0.5rem",
+          }}
+        >
+          {[
+            { id: "dashboard", label: "Live Dashboard" },
+            { id: "statistics", label: "Statistics" },
+            { id: "status", label: "System Status" },
+          ].map(tab => {
+            const isActive = view === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setView(tab.id)}
+                style={{
+                  padding: "0.35rem 0.9rem",
+                  borderRadius: 999,
+                  border: "1px solid transparent",
+                  backgroundColor: isActive ? "#0f172a" : "transparent",
+                  color: isActive ? "#f8fafc" : "#0f172a",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </nav>
 
-      {/* page body */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "1rem" }}>{renderView()}</div>
-
-      {/* footer with small hint and version tag */}
-      <div
-        style={{
-          marginTop: "2rem",
-          borderTop: "1px solid #e2e8f0",
-          padding: "0.75rem 1rem",
-          color: "#334155",
-          fontSize: "0.85rem",
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", gap: "1rem" }}>
-          <div>tip press 1 for dashboard 2 for statistics 3 for status</div>
-          <div style={{ opacity: 0.8 }}>v1 0 0 preview</div>
-        </div>
+        {/* page content */}
+        <main>{renderView()}</main>
       </div>
     </div>
   )
 }
+
+export default App

@@ -1,35 +1,29 @@
 import { useEffect, useState, useRef } from "react"
 
 /*
-  dashboard surface for live data and rolling stats
-  fetches status rolling statistics and a synthetic sensor stream from the backend
+  primary dashboard view for live data and rolling statistics
+  pulls status, statistics, and a synthetic sensor stream from the backend microservice
 */
 export default function Dashboard() {
-  // live data state
   const [latestPoint, setLatestPoint] = useState(null)
   const [dataHistory, setDataHistory] = useState([])
 
-  // rolling statistics state
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState(null)
 
-  // service status state
   const [statusInfo, setStatusInfo] = useState({
     connected: true,
-    message: "loading status...",
+    message: "Loading status...",
     serial_number: "",
     last_check: "",
   })
 
-  // controls
   const [autoStream, setAutoStream] = useState(true)
   const [isComputing, setIsComputing] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
-  // poll timer for auto stream
   const pollIntervalRef = useRef(null)
 
-  // helper that adds a timeout to fetch calls
   async function fetchWithTimeout(resource, options = {}, ms = 2000) {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), ms)
@@ -41,11 +35,10 @@ export default function Dashboard() {
     }
   }
 
-  // status retrieval
   async function fetchStatus() {
     try {
       const res = await fetchWithTimeout("/api/status")
-      if (!res.ok) throw new Error("status fetch failed")
+      if (!res.ok) throw new Error("Status fetch failed")
       const body = await res.json()
       setStatusInfo({
         connected: body.connected,
@@ -57,17 +50,16 @@ export default function Dashboard() {
       setStatusInfo(prev => ({
         ...prev,
         connected: false,
-        message: "unable to reach microservice",
+        message: "Unable to reach microservice.",
         last_check: new Date().toLocaleTimeString(),
       }))
     }
   }
 
-  // statistics retrieval
   async function fetchStats() {
     try {
       const res = await fetchWithTimeout("/api/stats")
-      if (!res.ok) throw new Error("stats fetch failed")
+      if (!res.ok) throw new Error("Stats fetch failed")
       const body = await res.json()
       if (body.status === "ok") {
         setStats({
@@ -77,43 +69,40 @@ export default function Dashboard() {
         setStatsError(null)
       } else {
         setStats(null)
-        setStatsError(body.message || "statistics not available")
+        setStatsError(body.message || "Statistics are not currently available.")
       }
     } catch {
-      setStatsError("failed to fetch statistics")
+      setStatsError("Failed to fetch statistics.")
     }
   }
 
-  // single sensor point retrieval
   async function fetchDataPoint() {
     try {
       const res = await fetchWithTimeout("/api/data")
-      if (!res.ok) throw new Error("data fetch failed")
+      if (!res.ok) throw new Error("Data fetch failed")
       const body = await res.json()
       if (body.status === "ok") {
         setLatestPoint(body.data)
         setDataHistory(prev => [body.data, ...prev].slice(0, 200))
       }
     } catch {
-      // non fatal data error the panel will just pause updates
+      // non-fatal; the panel will simply pause updates until the next successful request
     }
   }
 
-  // initial load
   useEffect(() => {
     fetchStatus()
     fetchStats()
     fetchDataPoint()
   }, [])
 
-  // 5 hz polling when auto stream is on
   useEffect(() => {
     if (autoStream) {
       pollIntervalRef.current = setInterval(() => {
         fetchStatus()
         fetchStats()
         fetchDataPoint()
-      }, 200) // 5 hz
+      }, 200)
     } else if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
       pollIntervalRef.current = null
@@ -156,13 +145,12 @@ export default function Dashboard() {
       setStats(null)
       await fetchStats()
     } catch {
-      // if reset fails the user can retry
+      // the user can retry the reset if it fails
     } finally {
       closeResetConfirm()
     }
   }
 
-  // helper render functions keep the main jsx readable
   function renderGuidedSteps() {
     return (
       <section
@@ -174,11 +162,11 @@ export default function Dashboard() {
           fontSize: "0.8rem",
         }}
       >
-        <span style={{ fontWeight: 600 }}>quick tour</span>
-        <span>• watch live samples update in the left panel</span>
-        <span>• monitor rolling statistics in the right panel</span>
-        <span>• pause streaming to inspect specific values</span>
-        <span>• reset the window when starting a new test run</span>
+        <span style={{ fontWeight: 600 }}>Quick Tour</span>
+        <span>• Watch live samples update in the left panel.</span>
+        <span>• Monitor rolling statistics in the right panel.</span>
+        <span>• Pause streaming to inspect specific values.</span>
+        <span>• Reset the window when starting a new test run.</span>
       </section>
     )
   }
@@ -197,47 +185,50 @@ export default function Dashboard() {
         <button
           onClick={handleToggleStream}
           style={{
-            padding: "0.3rem 0.8rem",
+            padding: "0.35rem 0.9rem",
             borderRadius: 4,
             border: "1px solid #0f172a",
             backgroundColor: autoStream ? "#0f172a" : "#ffffff",
             color: autoStream ? "#ffffff" : "#0f172a",
             fontSize: "0.85rem",
             cursor: "pointer",
+            fontWeight: 500,
           }}
         >
-          {autoStream ? "pause live stream" : "resume live stream"}
+          {autoStream ? "Pause Live Stream" : "Resume Live Stream"}
         </button>
 
         <button
           onClick={handleComputeStats}
           disabled={isComputing}
           style={{
-            padding: "0.3rem 0.8rem",
+            padding: "0.35rem 0.9rem",
             borderRadius: 4,
             border: "1px solid #2563eb",
             backgroundColor: isComputing ? "#eff6ff" : "#2563eb",
             color: isComputing ? "#2563eb" : "#ffffff",
             fontSize: "0.85rem",
             cursor: isComputing ? "default" : "pointer",
+            fontWeight: 500,
           }}
         >
-          {isComputing ? "computing…" : "compute stats now"}
+          {isComputing ? "Computing…" : "Compute Statistics Now"}
         </button>
 
         <button
           onClick={openResetConfirm}
           style={{
-            padding: "0.3rem 0.8rem",
+            padding: "0.35rem 0.9rem",
             borderRadius: 4,
             border: "1px solid #b91c1c",
             backgroundColor: "#ffffff",
             color: "#b91c1c",
             fontSize: "0.85rem",
             cursor: "pointer",
+            fontWeight: 500,
           }}
         >
-          reset statistics window
+          Reset Statistics Window
         </button>
       </section>
     )
@@ -276,9 +267,10 @@ export default function Dashboard() {
             marginTop: 0,
             marginBottom: "0.5rem",
             fontSize: "1rem",
+            fontWeight: 600,
           }}
         >
-          live sensor data
+          Live Sensor Data
         </h2>
 
         <div
@@ -294,25 +286,25 @@ export default function Dashboard() {
           {latestPoint ? (
             <>
               <div>
-                <strong>timestamp </strong>
+                <strong>Timestamp: </strong>
                 {latestPoint.timestamp}
               </div>
               <div>
-                <strong>value </strong>
+                <strong>Value: </strong>
                 {latestPoint.value}
               </div>
               <div>
-                <strong>sequence </strong>
+                <strong>Sequence: </strong>
                 {latestPoint.sequence}
               </div>
             </>
           ) : (
-            <div>waiting for first data point…</div>
+            <div>Waiting for the first data point…</div>
           )}
         </div>
 
         <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#64748b" }}>
-          showing latest {dataHistory.length} samples (most recent first)
+          Showing the latest {dataHistory.length} samples (most recent first).
         </div>
       </section>
     )
@@ -331,9 +323,10 @@ export default function Dashboard() {
             marginTop: 0,
             marginBottom: "0.5rem",
             fontSize: "1rem",
+            fontWeight: 600,
           }}
         >
-          rolling statistics
+          Rolling Statistics
         </h2>
 
         <div
@@ -355,34 +348,34 @@ export default function Dashboard() {
               }}
             >
               <div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>mean</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Mean</div>
                 <div style={{ fontWeight: 600 }}>{stats.mean}</div>
               </div>
               <div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>min</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Minimum</div>
                 <div style={{ fontWeight: 600 }}>{stats.min}</div>
               </div>
               <div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>max</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Maximum</div>
                 <div style={{ fontWeight: 600 }}>{stats.max}</div>
               </div>
               <div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>std dev</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Standard Deviation</div>
                 <div style={{ fontWeight: 600 }}>{stats.stddev}</div>
               </div>
               <div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>samples</div>
+                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Sample Count</div>
                 <div style={{ fontWeight: 600 }}>{stats.count}</div>
               </div>
             </div>
           ) : (
-            <div>statistics will appear once the window is populated</div>
+            <div>Statistics will appear once the rolling window has enough samples.</div>
           )}
         </div>
 
         {stats?.last_updated && (
           <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#64748b" }}>
-            last updated {stats.last_updated}
+            Last updated {stats.last_updated}.
           </div>
         )}
       </section>
@@ -404,12 +397,12 @@ export default function Dashboard() {
         }}
       >
         <div>
-          <strong>service </strong>
-          {statusInfo.connected ? "online" : "offline"}
+          <strong>Service: </strong>
+          {statusInfo.connected ? "Online" : "Offline"}
         </div>
         <div>{statusInfo.message}</div>
         <div>{statusInfo.serial_number}</div>
-        <div>last check {statusInfo.last_check}</div>
+        <div>Last check {statusInfo.last_check}</div>
       </div>
     )
   }
@@ -439,9 +432,9 @@ export default function Dashboard() {
             fontSize: "0.9rem",
           }}
         >
-          <h2 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1rem" }}>reset statistics window</h2>
+          <h2 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1rem" }}>Reset Statistics Window</h2>
           <p style={{ marginTop: 0, marginBottom: "0.75rem" }}>
-            this will clear the current rolling window and start collecting a fresh set of samples
+            This clears the current rolling window and starts collecting a fresh set of samples.
           </p>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
             <button
@@ -455,7 +448,7 @@ export default function Dashboard() {
                 cursor: "pointer",
               }}
             >
-              cancel
+              Cancel
             </button>
             <button
               onClick={confirmReset}
@@ -469,7 +462,7 @@ export default function Dashboard() {
                 cursor: "pointer",
               }}
             >
-              confirm reset
+              Confirm Reset
             </button>
           </div>
         </div>
@@ -487,20 +480,20 @@ export default function Dashboard() {
       }}
     >
       <header style={{ marginBottom: "0.75rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.25rem", lineHeight: 1.3, fontWeight: 600 }}>
-          real time test dashboard
-        </h1>
+        <h2 style={{ margin: 0, fontSize: "1.25rem", lineHeight: 1.3, fontWeight: 600 }}>
+          Real-Time Test Dashboard
+        </h2>
         <div
           style={{
             fontSize: "0.9rem",
-            color: "#222",
+            color: "#475569",
             marginTop: "0.25rem",
             maxWidth: "60ch",
             lineHeight: 1.45,
           }}
         >
-          monitor live sensor data and rolling statistics from the backend microservice
-          pause streaming to inspect values or reset the window when starting a new run
+          Monitor live sensor data and rolling statistics from the backend microservice. Pause the stream to inspect
+          individual values, or reset the statistics window when starting a new test run.
         </div>
       </header>
 

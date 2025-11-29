@@ -2,14 +2,14 @@ import { useEffect, useState } from "react"
 
 /*
   statistics view for the rolling window
-  focused read only panel that surfaces mean min max std dev and sample count with reset controls
+  read-only panel that surfaces mean, min, max, standard deviation, and sample count
 */
 export default function Statistics() {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState(null)
   const [statusInfo, setStatusInfo] = useState({
     connected: true,
-    message: "loading status...",
+    message: "Loading status...",
     last_check: "",
   })
   const [showDetails, setShowDetails] = useState(false)
@@ -30,7 +30,7 @@ export default function Statistics() {
       setStatusInfo(prev => ({
         ...prev,
         connected: false,
-        message: "unable to reach microservice",
+        message: "Unable to reach microservice.",
         last_check: new Date().toLocaleTimeString(),
       }))
     }
@@ -49,10 +49,10 @@ export default function Statistics() {
         setStatsError(null)
       } else {
         setStats(null)
-        setStatsError(body.message || "statistics not available")
+        setStatsError(body.message || "Statistics are not currently available.")
       }
     } catch {
-      setStatsError("failed to fetch statistics")
+      setStatsError("Failed to fetch statistics.")
     }
   }
 
@@ -85,7 +85,7 @@ export default function Statistics() {
       setStats(null)
       await fetchStats()
     } catch {
-      setStatsError("reset failed please retry")
+      setStatsError("Reset failed. Please try again.")
     } finally {
       closeResetConfirm()
     }
@@ -104,17 +104,17 @@ export default function Statistics() {
         }}
       >
         <div style={{ marginBottom: "0.25rem" }}>
-          <strong>service </strong>
-          {statusInfo.connected ? "online" : "offline"}
+          <strong>Service: </strong>
+          {statusInfo.connected ? "Online" : "Offline"}
         </div>
         <div>{statusInfo.message}</div>
-        <div style={{ marginTop: "0.25rem", color: "#64748b" }}>last check {statusInfo.last_check}</div>
+        <div style={{ marginTop: "0.25rem", color: "#64748b" }}>Last check {statusInfo.last_check}</div>
       </section>
     )
   }
 
   function renderSummaryCards() {
-    if (!stats) return <div>statistics will appear once the window is populated</div>
+    if (!stats) return <div>Statistics will appear once the rolling window has enough samples.</div>
 
     return (
       <div
@@ -125,70 +125,27 @@ export default function Statistics() {
           marginBottom: "0.75rem",
         }}
       >
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            padding: "0.75rem",
-            backgroundColor: "#ffffff",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>mean</div>
-          <div style={{ fontWeight: 600 }}>{stats.mean}</div>
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            padding: "0.75rem",
-            backgroundColor: "#ffffff",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>min</div>
-          <div style={{ fontWeight: 600 }}>{stats.min}</div>
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            padding: "0.75rem",
-            backgroundColor: "#ffffff",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>max</div>
-          <div style={{ fontWeight: 600 }}>{stats.max}</div>
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            padding: "0.75rem",
-            backgroundColor: "#ffffff",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>std dev</div>
-          <div style={{ fontWeight: 600 }}>{stats.stddev}</div>
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            padding: "0.75rem",
-            backgroundColor: "#ffffff",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>samples</div>
-          <div style={{ fontWeight: 600 }}>{stats.count}</div>
-        </div>
+        {[
+          { label: "Mean", value: stats.mean },
+          { label: "Minimum", value: stats.min },
+          { label: "Maximum", value: stats.max },
+          { label: "Standard Deviation", value: stats.stddev },
+          { label: "Sample Count", value: stats.count },
+        ].map(card => (
+          <div
+            key={card.label}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 4,
+              padding: "0.75rem",
+              backgroundColor: "#ffffff",
+              fontSize: "0.85rem",
+            }}
+          >
+            <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem" }}>{card.label}</div>
+            <div style={{ fontWeight: 600 }}>{card.value}</div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -197,12 +154,12 @@ export default function Statistics() {
     if (!stats) return null
     return (
       <section style={{ fontSize: "0.8rem", color: "#64748b" }}>
-        <div>last updated {stats.last_updated}</div>
+        <div>Last updated {stats.last_updated}.</div>
         <button
           onClick={() => setShowDetails(prev => !prev)}
           style={{
             marginTop: "0.5rem",
-            padding: "0.2rem 0.6rem",
+            padding: "0.25rem 0.7rem",
             borderRadius: 4,
             border: "1px solid #cbd5e1",
             backgroundColor: "#ffffff",
@@ -210,12 +167,12 @@ export default function Statistics() {
             cursor: "pointer",
           }}
         >
-          {showDetails ? "hide explanation" : "show explanation"}
+          {showDetails ? "Hide Explanation" : "Show Explanation"}
         </button>
         {showDetails && (
           <p style={{ marginTop: "0.5rem", maxWidth: "60ch" }}>
-            the microservice keeps a rolling window of recent samples and reports the aggregate metrics here
-            this helps confirm the signal is stable before committing a test run
+            The microservice maintains a rolling window of recent samples and reports aggregate metrics here. This view
+            helps confirm that the signal is stable before generating a full report or exporting data.
           </p>
         )}
       </section>
@@ -266,9 +223,9 @@ export default function Statistics() {
             fontSize: "0.9rem",
           }}
         >
-          <h2 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1rem" }}>reset statistics window</h2>
+          <h2 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1rem" }}>Reset Statistics Window</h2>
           <p style={{ marginTop: 0, marginBottom: "0.75rem" }}>
-            this will clear the current rolling window and start collecting a fresh set of samples
+            This clears the current rolling window and starts collecting a fresh set of samples.
           </p>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
             <button
@@ -282,7 +239,7 @@ export default function Statistics() {
                 cursor: "pointer",
               }}
             >
-              cancel
+              Cancel
             </button>
             <button
               onClick={confirmReset}
@@ -296,7 +253,7 @@ export default function Statistics() {
                 cursor: "pointer",
               }}
             >
-              confirm reset
+              Confirm Reset
             </button>
           </div>
         </div>
@@ -314,10 +271,10 @@ export default function Statistics() {
       }}
     >
       <header style={{ marginBottom: "1rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.2rem", lineHeight: 1.3, fontWeight: 600 }}>rolling statistics</h1>
-        <div style={{ fontSize: "0.9rem", color: "#222", marginTop: "0.25rem", lineHeight: 1.45 }}>
-          displays the current rolling mean min max and standard deviation for the sensor stream
-          use this view to verify stability before generating full reports
+        <h2 style={{ margin: 0, fontSize: "1.2rem", lineHeight: 1.3, fontWeight: 600 }}>Rolling Statistics</h2>
+        <div style={{ fontSize: "0.9rem", color: "#475569", marginTop: "0.25rem", lineHeight: 1.45 }}>
+          View the current rolling mean, minimum, maximum, standard deviation, and sample count for the sensor stream.
+          Use this panel to verify signal stability before generating reports.
         </div>
       </header>
 
@@ -340,31 +297,33 @@ export default function Statistics() {
             onClick={handleComputeNow}
             disabled={isComputing}
             style={{
-              padding: "0.3rem 0.8rem",
+              padding: "0.35rem 0.9rem",
               borderRadius: 4,
               border: "1px solid #2563eb",
               backgroundColor: isComputing ? "#eff6ff" : "#2563eb",
               color: isComputing ? "#2563eb" : "#ffffff",
               fontSize: "0.85rem",
               cursor: isComputing ? "default" : "pointer",
+              fontWeight: 500,
             }}
           >
-            {isComputing ? "computing…" : "compute stats now"}
+            {isComputing ? "Computing…" : "Compute Statistics Now"}
           </button>
 
           <button
             onClick={openResetConfirm}
             style={{
-              padding: "0.3rem 0.8rem",
+              padding: "0.35rem 0.9rem",
               borderRadius: 4,
               border: "1px solid #b91c1c",
               backgroundColor: "#ffffff",
               color: "#b91c1c",
               fontSize: "0.85rem",
               cursor: "pointer",
+              fontWeight: 500,
             }}
           >
-            reset statistics window
+            Reset Statistics Window
           </button>
         </div>
       </section>

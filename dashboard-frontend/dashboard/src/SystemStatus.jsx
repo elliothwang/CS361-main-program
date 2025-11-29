@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
 
 /*
-  system status page with focused health snapshot
-  shows last check connection status and recovery controls
+  system status view with a focused health snapshot
+  shows connection status and recovery controls for the statistics microservice
 */
 export default function SystemStatus({ onBack }) {
   const [statusInfo, setStatusInfo] = useState({
     connected: true,
-    message: "loading status...",
+    message: "Loading status...",
     serial_number: "",
     last_check: "",
   })
@@ -29,7 +29,7 @@ export default function SystemStatus({ onBack }) {
       setStatusInfo(prev => ({
         ...prev,
         connected: false,
-        message: "unable to reach microservice",
+        message: "Unable to reach microservice.",
         last_check: new Date().toLocaleTimeString(),
       }))
     } finally {
@@ -44,7 +44,7 @@ export default function SystemStatus({ onBack }) {
   function renderConnectionCard() {
     const badgeColor = statusInfo.connected ? "#16a34a" : "#b91c1c"
     const badgeBg = statusInfo.connected ? "#dcfce7" : "#fee2e2"
-    const label = statusInfo.connected ? "connected" : "disconnected"
+    const label = statusInfo.connected ? "Connected" : "Disconnected"
 
     return (
       <section
@@ -59,13 +59,13 @@ export default function SystemStatus({ onBack }) {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
           <div>
-            <div style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.25rem" }}>connection</div>
+            <div style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.25rem" }}>Connection Status</div>
             <div style={{ fontSize: "1rem", fontWeight: 600 }}>{statusInfo.message}</div>
           </div>
           <span
             style={{
               display: "inline-block",
-              padding: "0.15rem 0.5rem",
+              padding: "0.15rem 0.6rem",
               borderRadius: 9999,
               backgroundColor: badgeBg,
               color: badgeColor,
@@ -78,7 +78,7 @@ export default function SystemStatus({ onBack }) {
         </div>
 
         <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#64748b" }}>
-          last check {statusInfo.last_check || "pending"}
+          Last check {statusInfo.last_check || "pending"}.
         </div>
       </section>
     )
@@ -97,12 +97,12 @@ export default function SystemStatus({ onBack }) {
         }}
       >
         <div style={{ marginBottom: "0.25rem" }}>
-          <strong>device serial </strong>
-          {statusInfo.serial_number || "not reported"}
+          <strong>Device Serial: </strong>
+          {statusInfo.serial_number || "Not reported"}
         </div>
         <p style={{ marginTop: "0.25rem", marginBottom: 0, maxWidth: "60ch", color: "#64748b" }}>
-          this page is useful during debugging sessions and in your video to show that the dashboard is reaching
-          the stats microservice as a separate process instead of a direct function call
+          This view is useful in debugging sessions and in your demo video to show that the dashboard is reaching
+          the statistics microservice as a separate process, rather than calling its code directly.
         </p>
       </section>
     )
@@ -122,32 +122,34 @@ export default function SystemStatus({ onBack }) {
           onClick={fetchStatus}
           disabled={isChecking}
           style={{
-            padding: "0.3rem 0.8rem",
+            padding: "0.35rem 0.9rem",
             borderRadius: 4,
             border: "1px solid #2563eb",
             backgroundColor: isChecking ? "#eff6ff" : "#2563eb",
             color: isChecking ? "#2563eb" : "#ffffff",
             fontSize: "0.85rem",
             cursor: isChecking ? "default" : "pointer",
+            fontWeight: 500,
           }}
         >
-          {isChecking ? "checking…" : "retry check"}
+          {isChecking ? "Checking…" : "Retry Check"}
         </button>
 
         {onBack && (
           <button
             onClick={onBack}
             style={{
-              padding: "0.3rem 0.8rem",
+              padding: "0.35rem 0.9rem",
               borderRadius: 4,
               border: "1px solid #cbd5e1",
               backgroundColor: "#ffffff",
               color: "#0f172a",
               fontSize: "0.85rem",
               cursor: "pointer",
+              fontWeight: 500,
             }}
           >
-            back to dashboard
+            Back to Dashboard
           </button>
         )}
       </section>
@@ -164,7 +166,7 @@ export default function SystemStatus({ onBack }) {
       }}
     >
       <header style={{ marginBottom: "1rem" }}>
-        <h1
+        <h2
           style={{
             margin: 0,
             fontSize: "1.2rem",
@@ -173,11 +175,11 @@ export default function SystemStatus({ onBack }) {
             color: statusInfo.connected ? "#0f172a" : "#b91c1c",
           }}
         >
-          system status
-        </h1>
-        <div style={{ fontSize: "0.9rem", color: "#222", marginTop: "0.25rem", lineHeight: 1.45 }}>
-          shows whether the dashboard can reach the statistics microservice
-          includes retry and navigation controls for recovering from transient failures
+          System Status
+        </h2>
+        <div style={{ fontSize: "0.9rem", color: "#475569", marginTop: "0.25rem", lineHeight: 1.45 }}>
+          Review the connection state of the statistics microservice, including the last successful check and device
+          identifier. Use this panel to verify that the dashboard can reach the service before running tests.
         </div>
       </header>
 
