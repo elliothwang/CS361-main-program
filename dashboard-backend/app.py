@@ -135,21 +135,70 @@ def api_set_mode():
 # --------------------------- Plot Visualizer ---------------------------
 @app.route("/api/plots", methods=["POST"])
 def api_generate_plot():
+    """
+    proxy endpoint for generating a plot via the data plot visualizer microservice
+
+    - reads x/y and metadata from the request body sent by the frontend
+    - respects the current environment mode from the feature flag microservice
+    - in test mode: skips the remote call and returns a 'skipped' status
+    - in production mode: wraps x/y inside a 'data' object as required by the plot ms
+    """
     mode = get_environment_mode()
     body = request.get_json(silent=True) or {}
 
+    # extract fields the frontend sends
+    x = body.get("x", [])
+    y = body.get("y", [])
+    title = body.get("title", "Rolling statistics plot")
+    xlabel = body.get("xlabel", "Sample Index")
+    ylabel = body.get("ylabel", "Value")
+
+    # in test mode, never call the plot microservice
     if mode == "test":
-        return jsonify({
-            "status": "skipped",
-            "mode": mode,
-            "message": "Plot generation disabled in Test Mode."
-        }), 200
+        return jsonify(
+            {
+                "status": "skipped",
+                "mode": mode,
+                "message": "Plot generation disabled in Test Mode.",
+            }
+        ), 200
+
+    # build the payload the data plot visualizer microservice expects:
+    # a top-level 'data' field that wraps x/y, plus metadata
+    payload = {
+        "data": {
+            "x": x,
+            "y": y,
+        },
+        "title": title,
+        "xlabel": xlabel,
+        "ylabel": ylabel,
+    }
 
     try:
-        resp = requests.post(f"{PLOT_URL}/plots", json=body, timeout=4)
-        return jsonify(resp.json()), resp.status_code
+        resp = requests.post(f"{PLOT_URL}/plots", json=payload, timeout=4)
+        # try to parse the response as json; if that fails, surface a clean error
+        try:
+            resp_body = resp.json()
+        except ValueError as exc:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Plot MS returned non-JSON response: {exc}",
+                    }
+                ),
+                502,
+            )
+
+        return jsonify(resp_body), resp.status_code
     except Exception as exc:
-        return jsonify({"status": "error", "message": f"Plot MS unavailable: {exc}"}), 503
+        return (
+            jsonify(
+                {"status": "error", "message": f"Plot MS unavailable: {exc}"}
+            ),
+            503,
+        )
 
 
 @app.route("/api/plots/<plot_id>", methods=["GET"])
