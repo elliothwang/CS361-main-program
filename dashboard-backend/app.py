@@ -298,32 +298,6 @@ def api_auth_register():
             503,
         )
 
-
-@app.route("/api/auth/login", methods=["POST"])
-def api_auth_login():
-    """
-    proxy user login to the auth microservice
-    """
-    try:
-        payload = request.get_json(silent=True) or {}
-        resp = requests.post(
-            f"{AUTH_URL}/auth/login",
-            json=payload,
-            timeout=4,
-        )
-        return jsonify(resp.json()), resp.status_code
-    except Exception as exc:
-        return (
-            jsonify(
-                {
-                    "error": "auth microservice unavailable during login",
-                    "details": str(exc),
-                }
-            ),
-            503,
-        )
-
-
 @app.route("/api/auth/logout", methods=["POST"])
 def api_auth_logout():
     """
